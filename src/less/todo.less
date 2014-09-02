@@ -1,0 +1,32 @@
+#tasks-wrapper{
+    h1{
+        background-color: #EBEBEB;
+        margin:0;
+        padding:15px;
+        text-align: center;
+    }
+    h2{
+        margin-left:10px;
+    }
+    .list-group{
+        border:1px solid @blueish;
+        ul{
+            display: inline-block;
+            float: none;
+        }
+        .list-group-item{
+            border: 0;
+            padding: 1px 15px;
+            input[type='checkbox']{
+                margin:0 2px;
+            }
+        }
+    }
+    #completed-tasks{
+        li{
+            span{
+                text-decoration: line-through;
+            }
+        }
+    }
+}

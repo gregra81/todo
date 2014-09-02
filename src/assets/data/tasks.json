@@ -1,0 +1,7 @@
+[
+    {"id": 1, "label": "Buy a carton milk","due":"2014-09-01T09:00:01","assignee":{"id":1,"name":"Dean Sofer"}, "status":1},
+    {"id": 2, "label": "Call the insurance guy","due":"2014-09-04T08:07:01","assignee":{"id":1,"name":"Dean Sofer"},"status":1},
+    {"id": 3, "label": "Complete item number 4 on your bucket list","assignee":{"id":3,"name":"Peter Piper"},"due":"2014-08-01T08:00:01","status":0},
+    {"id": 4, "label": "Call Mom","due":"2014-09-02T08:00:01","assignee":{"id":4,"name":"Peter Darwin"},"status":0},
+    {"id": 5, "label": "Walk out the dog","due":"2014-09-02T08:00:05","assignee":{"id":1,"name":"Peter Darwin"},"status":1}
+]

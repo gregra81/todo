@@ -1,0 +1,41 @@
+<div id="tasks-wrapper">
+    <h1>Task list</h1>
+    <div class="container">
+        <div class="col-md-12">
+            <div id='incompleted-tasks' class="list-group">
+                <h2>Tasks to complete</h2>
+                <div class="alert alert-success" ng-show='!inCompletedTasksCount'>Well done, now go and get a life!</div>
+                <ul class='col-sm-12'>  
+                    <li class="list-group-item" ng-repeat="task in tasks | orderBy : '-due'">
+                        <span ng-show='!task.status'>
+                            <input type='checkbox' ng-model='task.status' ng-change="checkTasksCompletion()">
+                            <span>
+                                {{task.label}} 
+                                <span ng-show='task.assignee.id'>({{task.assignee.name}})</span>
+                                <a data-ui-sref='todo.edit({id:task.id})'><i class="glyphicon glyphicon-edit"></i></a>   
+                            </span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+            <div id='completed-tasks' class="list-group">
+                <h2>Tasks completed</h2>
+                <div class="alert alert-info" ng-show='!completedTasksCount'>Why postpone something for tomorrow if you can postpone it to next week?</div>
+                <ul class='col-sm-12'>  
+                    <li class="list-group-item" ng-repeat="task in tasks | orderBy : '-due'">
+                        <span ng-show='task.status'>
+                            <input type='checkbox' ng-model='task.status' ng-checked="task.status" ng-change="checkTasksCompletion()"/>
+                            <span>
+                                {{task.label}} 
+                                <span ng-show='task.assignee.id'>({{task.assignee.name}})</span>
+                                <a data-ui-sref='todo.edit({id:task.id})'><i class="glyphicon glyphicon-edit"></i></a>
+                            </span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <button class='btn btn-primary' data-ui-sref='todo.addTask'>Add Task</button>
+    </div>
+</div>
+
