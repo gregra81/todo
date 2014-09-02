@@ -14,9 +14,11 @@ $ cd todo
 $ sudo npm -g install grunt-cli karma bower
 $ npm install
 $ bower install
-$ grunt watch
+$ grunt
 ```
 
-Finally, open `file:///path/to/todo/build/index.html` in your browser.
+Finally, open `file:///path/to/todo/bin/index.html` in your browser.
+
+P.S: The build version is in file:///path/to/todo/build
 
 Enjoy!
