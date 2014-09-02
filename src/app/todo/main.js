@@ -211,8 +211,9 @@
                      */
                     $scope.addOrUpdateTask = function(passedTask) {
                         
-                        //If updating
-                        if ($scope.task) {
+                         //If updating
+                        if ($scope.task.id) {
+                            
                             for (var i in $scope.tasks) {
                                 if ($scope.tasks[i].id === parseInt(passedTask, 10)) {
                                     $scope.tasks[i] = passedTask;
@@ -221,8 +222,8 @@
                         //else if saving new    
                         } else {
                             passedTask.status = 0;
-                            passedTask.due = task.due || getNow();
-                            passedTask.assignee = task.assignee || {};
+                            passedTask.due = passedTask.due || getNow();
+                            passedTask.assignee = passedTask.assignee || {};
                             $scope.tasks.push(passedTask);
                         }
                         $state.go('todo.list');
