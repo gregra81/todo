@@ -86,11 +86,16 @@
                     /** These run onload **/
                     /**********************/
 
+                    //For new tasks
+                    $scope.lastId = 0;
                     /**
                      * Get the tasks
                      */
                     dataModels.tasks().then(function(response) {
                         $scope.tasks = response;
+                        
+                        //Assume ids are ascending
+                        $scope.lastId = $scope.tasks[$scope.tasks.length-1].id;
                         setTasksCompletion();
                     });
 
@@ -210,20 +215,21 @@
                      * @returns {undefined}
                      */
                     $scope.addOrUpdateTask = function(passedTask) {
-                        
-                         //If updating
+
+                        //If updating
                         if ($scope.task.id) {
-                            
+
                             for (var i in $scope.tasks) {
                                 if ($scope.tasks[i].id === parseInt(passedTask, 10)) {
                                     $scope.tasks[i] = passedTask;
                                 }
                             }
-                        //else if saving new    
+                            //else if saving new    
                         } else {
                             passedTask.status = 0;
                             passedTask.due = passedTask.due || getNow();
                             passedTask.assignee = passedTask.assignee || {};
+                             passedTask.id = $scope.lastId+1;
                             $scope.tasks.push(passedTask);
                         }
                         $state.go('todo.list');
