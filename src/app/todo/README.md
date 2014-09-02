@@ -8,12 +8,16 @@ src/
   |  |- todo/
   |  |  |- todo.js
   |  |  |- todo.spec.js
+  |  |- templates/
   |  |  |- todo.tpl.html
+  |  |  |- add-task.tpl.html
+  |  |  |- todo-list.tpl.html
+
 ```
 
 - `todo.js` - defines the module.
 - `todo.spec.js` - module unit tests.
-- `todo.tpl.html` - the route template.
+- `templates` - the route templates folder.
 
 ## `todo.js`
 
@@ -61,10 +65,10 @@ title (see the app.js controller).
 })
 ```
 
-And of course we define a controller for our route, though in this case it does
-nothing.
+And of course we define a controller for our route
 
 ```js
 .controller( 'TodoCtrl', function TodoController( $scope ) {
+    //...
 })
 ```
