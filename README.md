@@ -17,7 +17,7 @@ $ bower install
 $ grunt
 ```
 
-Finally, open `file:///path/to/todo/bin/index.html` in your browser.
+Finally, open `file:///path/to/todo/bin/index.html` in your Firefox (since chrome/safari/ie cannot do ajax calls when opening them directly)
 
 P.S: The build version is in file:///path/to/todo/build
 
