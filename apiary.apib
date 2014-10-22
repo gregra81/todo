@@ -1,46 +1,28 @@
 FORMAT: 1A
 
-# test
-Notes API is a *short texts saving* service similar to its physical paper presence on your table biatch [GitHub's Gist][http://gist.github.com]
+# Named Resource and Actions API 
+This API example demonstrates how to name a resource and its actions, to give the reader a better idea about what the resource is used for.
 
-# Group Notes
-Notes related resources of the **Notes API**
+## API Blueprint
++ [Previous: Resource and Actions](2.%20Resource%20and%20Actions.md)
++ [This: Raw API Blueprint](https://raw.github.com/apiaryio/api-blueprint/master/examples/3.%20Named%20Resource%20and%20Actions.md)
++ [Next: Grouping Resources](4.%20Grouping%20Resources.md)
 
-## Notes Collection [/notes]
-### List all Notes [GET]
-+ Response 200 (application/json)
+# My Message [/message]
+OK, `My Message` probably isn't the best name for our resource but it will do for now. Note the URI `/message` is enclosed in square brackets. 
 
-        [{
-          "id": 1, "title": "Jogging in park"
-        }, {
-          "id": 2, "title": "Pick-up posters from post-office"
-        }]
+## Retrieve a Message [GET]
+Now this is informative! No extra explanation needed here. This action clearly retrieves the message.
 
-### Create a Note [POST]
-+ Request (application/json)
++ Response 200 (text/plain)
 
-        { "title": "Buy cheese and bread for breakfast." }
+        Hello World!
+        
+## Update a Message [PUT]
+`Update a message` - nice and simple naming is the best way to go.
 
-+ Response 201 (application/json)
++ Request (text/plain)
 
-        { "id": 3, "title": "Buy cheese and bread for breakfast." }
-
-## Note [/notes/{id}]
-A single Note object with all its details
-
-+ Parameters
-    + id (required, number, `1`) ... Numeric `id` of the Note to perform action with. Has example value.
-
-### Retrieve a Note [GET]
-+ Response 200 (application/json)
-
-    + Header
-
-            X-My-Header: The Value
-
-    + Body
-
-            { "id": 2, "title": "Pick-up posters from post-office" }
-
-### Remove a Note [DELETE]
+        All your base are belong to us.
+        
 + Response 204
