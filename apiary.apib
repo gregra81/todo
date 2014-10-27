@@ -1,1 +1,2332 @@
-Unexpected error occured, see logs
+FORMAT: 1A
+HOST: http://www.sparkprint.com/api/v1
+
+# Spark Print
+Print API is a printer discovery and communication service for Spark enabled printers. 
+
+# Group Tasks
+Many of the endpoints of the Print API are asynchronous.  Asynchronous API's return the ID of 
+a task object that indicates the status of the operation.  The "status" field indicates whether
+the task is in flight or done.  The "progress" field is a number between 0 and 1 indicating the
+fractional state of completion of the task.  Tasks are garbage collected.
+
+## GET /print/tasks/{id}
++ Response 200 (application/json)
+
+        {
+            "status" : "running",
+            "progress" : 0.75
+        }
+
+
+
+# Group PrinterTypes
+A printer type describes a particular model of 3D printer.  Typically, the data associated
+with the printer type is provided by the printer manufacturer.  The ID's for printer types
+are UUID's in the standard "8-4-4-4-12" format.
+
+## Printer Type [/print/printerTypes]
+A collection of registered printer types.
+
+### List all printer types [GET]
++ Response 200 (application/json)
+
+
+        {
+            "printerTypes" : [
+                {
+                    "id" : "7B7F944D-5F30-4C49-AA95-837D4B441260",
+                    "manufacturer" : "Autodesk",
+                    "model" : "Ember",
+                    "technology" : "DLP",
+                    "firmware" : "Custom",
+                    "output" : "PNG-GZIP",
+                    "supported_connections" : ["TCP_IP", "SD"],
+                    "preferred_connection" : "TCP_IP",
+                    "connections" : {},
+                    "build_volume" : {},
+                    "materials_types" :["PHOTORESIN"],
+                    "max_materials" : 1,
+                    "dlp_specs" : {}
+                },
+                {
+                    "id" : "758F6DC6-DE47-4D41-9345-690E6D6DB4D1",
+                    "manufacturer" : "Makerbot",
+                    "model" : "Replicator 2",
+                    "technology" : "FDM",
+                    "firmware" : "RepRap",
+                    "output" : "X3G",
+                    "supported_connections" : ["CONVEYOR", "SERIAL", "SD"],
+                    "preferred_connection" : "CONVEYOR",
+                    "connections" : {},
+                    "build_volume" : {},
+                    "materials_types" :["ABS", "PLA"],
+                    "max_materials" : 1,
+                    "fdm_specs" : {}
+                },
+                {
+                    "id" : "D0F8F332-B80B-4B17-87C1-E01B318EF9C7",
+                    "manufacturer" : "Type A",
+                    "model" : "Series 1 2014",
+                    "technology" : "FDM",
+                    "firmware" : "RepRap",
+                    "output" : "GCODE",
+                    "supported_connections" : ["TCP_IP", "SERIAL", "SD"],
+                    "preferred_connection" : "TCP_IP",
+                    "connections" : {},
+                    "build_volume" : {},
+                    "materials_types" :["ABS", "PLA"],
+                    "max_materials" : 1,
+                    "fdm_specs" : {}
+                }
+            ]
+        }
+
+### Create a printer type [POST]
++ Request (application/json)
+
+        {
+            "id" : "7B7F944D-5F30-4C49-AA95-837D4B441260",
+            "manufacturer" : "Autodesk",
+            "model" : "Ember",
+            "technology" : "DLP",
+            "firmware" : "Custom",
+            "output" : "PNG-GZIP",
+            "supported_connections" : ["TCP_IP", "SD"],
+            "preferred_connection" : "TCP_IP",
+            "connections" : {},
+            "build_volume" : {},
+            "materials_types" :["PHOTORESIN"],
+            max_materials" : 1,
+            "dlp_specs" : {}
+        }
+
++ Response 204
+
+### GET /print/printerTypes/{id}
+Get a printer type by ID.
+
++ Response 200 (application/json)
+
+        {
+            "id" : "7B7F944D-5F30-4C49-AA95-837D4B441260",
+            "manufacturer" : "Autodesk",
+            "model" : "Ember",
+            "technology" : "DLP",
+            "firmware" : "Custom",
+            "output" : "PNG-GZIP",
+            "supported_connections" : ["TCP_IP", "SD"],
+            "preferred_connection" : "TCP_IP",
+            "connections" : {},
+            "build_volume" : {},
+            "materials_types" :["PHOTORESIN"],
+            max_materials" : 1,
+            "dlp_specs" : {}
+        }
+
+
+# Group Printers
+A printer describes an instance of a printer type.
+
+## Printers [/print/printers]
+A collection of printers.
+
+### List all printers [GET]
++ Response 200 (application/json)
+
+        [
+            {
+                "id" : 123,
+                "name" : "My Makerbot",
+                "type_id" : 567,
+                "status" : "idle"                
+            }, {
+                "id" : 234,
+                "name" : "My Ember",
+                "type_id" : 678,
+                "status" : "printing",
+                "job_id" : 345
+            }
+        ]
+
+### Create a User Printer [POST]
++ Request (application/json)
+
+        {   
+            "name" = "ABC",
+            "type_id" = 234,
+        }
+
++ Response 201 (application/json)
+
+        {   
+            "id" : 123,
+            "name" "ABC",
+            "type_id" : 234,
+        }
+
+## Printer [/print/printers/{id}]
+A single Printer object with all its details
+
+### Retrieve a Printer [GET]
++ Response 200 (application/json)
+
+            {   
+                "id" : 123,
+                "name" : "My Makerbot",
+                "type_id" : 567,
+                "status" : "idle"                
+            }
+
+### Remove a Printer [DELETE]
++ Response 204
+
+
+### POST /print/printers/{id}/command
+Issue a command to a specific printer
+command options [start, stop, pause, print, 'load']
++ Request (application/json)
+
+        {
+            "command" : "start"
+        }
+
++ Response 200
+
+# Group Meshes
+
+A mesh respresents a 3D object to be printed.  A mesh consists of 3D
+geometry, a name, an affine transform, and optionally texture images.
+The 3D geometry is a collection of triangles that define the exterior
+surface (and possibly multiple interior surfaces) of the object.  The
+3D geometry can include UV coordinates for texture mapping using the
+texture images.  The name of the mesh is a UTF8 string suitable for
+display to the end-user.
+
+The affine transform places the mesh in the printer build volume.  It
+is specified as the first three columns of a 4x4 matrix.  The last
+column of the matrix is implicitly [ 0, 0, 0, 1 ].  In order to
+compute the positions of mesh vertices under the transform, the
+position vectors are implicitly extended to four elements with the
+scalar 1.0 and premultiplied as a row vector by the affine transform
+matrix.  The last component is discarded and the result is the new
+position.  The unit of length in the API is centimeters, so a scale
+factor that converts the mesh vertex positions to centimeters must be
+included in the affine transform, if necessary.
+
+Meshes are immutable resources.  Operations that conceptually alter a
+mesh always return a new mesh resource.  When a mesh is imported, the
+3D geometry and the mesh metadata is stored as a PrintStudio native file.
+The file ID for this file is accessible in the "internal_file_id" member
+of the mesh resource.
+
+## Meshes [/geom/meshes/{id}]
+
+### GET
+Get the mesh data.  The 3D geometry data is not returned by this
+end-point.
++ Response 200 (application/json)
+
+        {
+            "id" : 123,
+            "internal_file_id" : 345,
+            "name" : "frog",
+            "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+            "geom" : {
+                   "num_vertices" : 10000,    
+                   "num_triangles" : 20000,
+                   "has_uvs" : true },
+        }
+
+### POST /geom/meshes/import
+Create a mesh from a 3D geometry file.  The client should upload a
+file before using this end-point.  Supported files are binary STL,
+ASCII STL, OBJ, or a zip file containing an OBJ file and optionally an
+associated MTL file and texture images.  The support formats for
+texture images (If specified) are PNG and JPEG.
+
+This is an asynchronous end-point.  It returns a task ID.  Upon
+completion, the task ID can be queried for the newly created mesh ID.
+
++ Request (application/json)
+
+        {
+            "file_id" : 234,
+            "name" : "frog",
+            "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ]
+        }
+
++ Response 200 (application/json)
+
+        {
+            "task_id" : 123
+        }                   
+
+
+### POST /geom/meshes/rename
+Create a new mesh that is the same as the input mesh but with a
+different name.  Returns the same as GET on the new mesh ID.
+
++ Request (application/json)
+
+        {
+            "id" : 123,
+            "name" : "bunny"
+        }                   
+
++ Response 200 (application/json)
+
+        {
+            "id" : 234,
+            "internal_file_id" : 345,
+            "name" : "bunny",
+            "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+            "geom" : {
+                   "num_vertices" : 10000,    
+                   "num_triangles" : 20000,
+                   "has_uvs" : true },
+        }
+
+### POST /geom/meshes/transform
+Create a new mesh that is the same as the input mesh but with a new
+transform.  Returns the same data as GET against the new mesh ID.
+
++ Request (application/json)
+
+        {
+            "id" : 234,
+            "transform" : [ [ 2, 0, 0, 0 ], [ 0, 2, 0, 0 ], [ 0, 0, 2, 0 ] ],
+        }                   
+
++ Response 200 (application/json)
+
+        {
+            "id" : 345,
+            "internal_file_id" : 456,
+            "name" : "bunny",
+            "transform" : [ [ 2, 0, 0, 0 ], [ 0, 2, 0, 0 ], [ 0, 0, 2, 0 ] ],
+            "geom" : {
+                   "num_vertices" : 10000,    
+                   "num_triangles" : 20000,
+                   "has_uvs" : true },
+        }
+
+
+# Group Trays
+
+A tray represents the contents of the print bed of a printer for a
+particular print job.  A tray consists of a printer type, a print
+profile, and a collection of meshes.  Trays are immutable resources.
+Operations that conceptually alter a tray always return a new tray
+resource.
+
+### GET /print/trays/{id}
+Get the tray data.
+
++ Response 200 (application/json)
+
+        {
+            "id" : 123,
+            "printer_type_id" : 789,
+            "profile_id" : 890,
+            "meshes" : [
+                {
+                    "id" : 345,
+                    "internal_file_id" : 456,
+                    "name" : "frog",
+                    "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+                    "geom" : {
+                        "num_vertices" : 10000,    
+                        "num_triangles" : 20000,
+                        "has_uvs" : true },
+                },
+                {
+                    "id" : 567,
+                    "internal_file_id" : 678,
+                    "name" : "toad",
+                    "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+                    "geom" : {
+                        "num_vertices" : 8000,
+                        "num_triangles" : 160000,
+                        "has_uvs" : true },
+                },
+            ],
+        }
+
+
+### POST /print/trays/create
+Create a tray.
+
++ Request (application/json)
+
+        {
+            "printer_type_id" : 789,
+            "profile_id" : 890,
+            "meshes" : [ 345, 456 ]
+        }
+
++ Response 200 (application/json)
+
+        {
+            "id" : 123,
+            "printer_type_id" : 789,
+            "profile_id" : 890,
+            "meshes" : [
+                {
+                    "id" : 345,
+                    "internal_file_id" : 456,
+                    "name" : "frog",
+                    "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+                    "geom" : {
+                        "num_vertices" : 10000,    
+                        "num_triangles" : 20000,
+                        "has_uvs" : true },
+                },
+                {
+                    "id" : 567,
+                    "internal_file_id" : 678,
+                    "name" : "toad",
+                    "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+                    "geom" : {
+                        "num_vertices" : 8000,
+                        "num_triangles" : 160000,
+                        "has_uvs" : true },
+                },
+            ],
+        }
+
+### POST /print/trays/repack 
+Rearrange the meshes on the tray to fit in the print volume without
+overlapping.  Because this operation computes new transforms for the
+meshes, it will create new mesh objects.  The new array of meshes
+corresponds to the original array.
+
++ Request (application/json)
+
+        {
+            "id" : 123
+        }
+
++ Response 200 (application/json)
+
+        {
+            "id" : 123,
+            "printer_type_id" : 789,
+            "profile_id" : 890,
+            "meshes" : [
+                {
+                    "id" : 345,
+                    "internal_file_id" : 456,
+                    "name" : "frog",
+                    "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+                    "geom" : {
+                        "num_vertices" : 10000,    
+                        "num_triangles" : 20000,
+                        "has_uvs" : true },
+                },
+                {
+                    "id" : 567,
+                    "internal_file_id" : 678,
+                    "name" : "toad",
+                    "transform" : [ [ 1, 0, 0, 0 ], [ 0, 1, 0, 0 ], [ 0, 0, 1, 0 ] ],
+                    "geom" : {
+                        "num_vertices" : 8000,
+                        "num_triangles" : 160000,
+                        "has_uvs" : true },
+                },
+            ],
+        }
+
+
+# Group Jobs
+A print job running on a printer.
+
+## Jobs [/print/jobs]
+
+### GET
+Get the list of jobs.
+
++ Response 200 (application/json)
+    
+        [
+            {
+                "id" : 123,
+                "printer_id" : 567,
+                "status" : "printing",
+                "progress" : 0.75
+            }, {
+                "id" : 234,
+                "printer_id" : 567,
+                "status" : "done",
+                "progress" : 1.0
+            }
+        ]
+
+### POST
+Create a print job.
+
++ Request (application/json)
+
+        {
+            "printer_id" : 123,
+            "tray_id" : 234,
+            "profile_id" : 345
+        }
+        
++ Response 201 (application/json)
+
+        {
+            "id" : 456,
+            "printer_id" : 123,
+            "tray_id" : 234,
+            "profile_id" : 345,
+            "status" : "created"
+        }
+
+## GET /print/jobs/{id}
+Details for a specific job.
++ Response 200 (application/json)
+
+        {
+            "id" : 345,
+            "printer_id" : 123,
+            "tray_id" : 234,
+            "status" : "printing",
+            "progress" : 0.01
+        }
+
+## POST /print/jobs/{id}/generatePrintable
+Asynchronously create the printable data for this job.  This file is printer-dependent.  For FDM printers, it is usually
+a variant of G-code, but perhaps packaged in some format appropriate to the printer.  For DLP printers, 
+this file is a collection of images and maybe some metadata.
++ Response 200 (application/json)
+
+        {
+            "task_id" : 123
+        }
+        
+## POST /print/jobs/{id}/setPrintable
+Set the printable data for this job.  If a sophisticated client can generate the printable themselves, they
+can upload it and set it into the print job.
++ Request (application/json)
+
+        {
+            "file_id" : 123
+        }
+        
++ Response 204
+        
+#Group Printer discovery
+Refresh the list of printers available
+    1. Machine connected printers (serial over usb/Conveyor (makerbot) etc.)
+    2. Local network printers (bonjour/octoprint/sparkprint etc)
+    3. Spark Cloud Printers
+    4. others
+## Discover printers [/print/printers/refresh?type=conveyor]
+    
+### Discover newly added printers, update status of current printers [GET]
+    
++ Parameters
+
+    + type (optional, string) ... Types of printers. ["serial", "conveyor", "octoprint", "spark", "Dremmel", "user"]
+
++ Response 200 (application/json)
+    
+        {
+            "status" : "ok"
+        }
+    
+        
+        
+# Group Materials
+The Materials resources represent physical materials that printed parts are created
+from.  A list of materials is currently associated with a printer type.  The ID's for materials
+are UUID's in the standard "8-4-4-4-12" format.
+
+## Materials [/print/materials/]
+A collection of all registered materials.
+
+### List all Materials [GET]
+
++ Response 200 (application/json)
+
+         {
+            "materials" : [
+                {
+                    "id" : "0A296C18-8B51-42FF-A1BA-FFEC96AA946A",
+                    "name" : "ABS Pink",
+                    "technology" : "FDM"
+                }, {
+                    "id" : "98654215-3610-497E-BA96-FDB97D867CF7",
+                    "name" : "PLA Pink",
+                    "technology" : "FDM"
+                }, {
+                    "id" : "426F14FE-E6AF-496F-BBC7-7D6C0E16861D",
+                    "name" : "PHOTORESIN BLACK",
+                    "technology" : "PHOTORESIN"
+                }
+            ]
+        }
+
+### Create a Material [POST]
++ Request (application/json)
+
+        {
+            "id" : "0A296C18-8B51-42FF-A1BA-FFEC96AA946A",
+            "name" : "ABS Pink",
+            "technology" : "FDM"
+
+        }
+
++ Response 204
+
+### GET /print/materials/{id}
+Get a material by ID.
+
++ Response 200 (application/json)
+
+        {
+            "id" : "0A296C18-8B51-42FF-A1BA-FFEC96AA946A",
+            "name" : "ABS Pink",
+            "technology" : "FDM"
+
+        }
+
+
+# Group Profiles
+3D Model preparation profiles (e.g. slicers).  A list of profiles is currently
+associated with a printer type.  The ID's for profiles are UUID's in the standard
+"8-4-4-4-12" format.
+
+## Profiles [/print/profiles]
+A collection of all registered profiles.
+
+### List of all profiles [GET]
+
++ Response 200 (application/json)
+
+        [
+            {
+                "id": "34F0E39A-9389-42BA-AB5A-4F2CD59C98E4",
+                "technology": "FDM",
+                "name": "FDM High Quality",
+                "extrusion_distance_over_width": 0.75,
+                "extrusion_height_over_width": 0.898,
+                "extrusion_width": 0.4166666666666667
+            },
+            {
+                "id": "6004589B-C74C-4A91-8FFE-A9A487AD32FF",
+                "technology": "FDM",
+                "name": "FDM Standard Quality",
+                "extrusion_distance_over_width": 0.75,
+                "extrusion_height_over_width": 0.898,
+                "extrusion_width": 0.4166666666666667
+            },
+            {
+                "id": "BC4ED94A-2B81-4B55-9A2B-AB3ECABFA286",
+                "technology": "PHOTORESIN",
+                "name": "Isaac High Quality",
+                "Isaac_FirstExposureSec": 1,
+                "Isaac_BurnInLayers": 1,
+                "Isaac_BurnInExposureSec": 1,
+                "Isaac_ModelExposureSec": 1,
+                "Isaac_LayerThicknessMicrons": 1,
+                "Isaac_SeparationRPMOffset": 1
+            }
+        ]
+  
+### Create a Profile [POST]
+
++ Request (application/json)
+
+        {
+            "id": "BC4ED94A-2B81-4B55-9A2B-AB3ECABFA286",
+            "technology": "PHOTORESIN",
+            "name": "Isaac High Quality",
+            "Isaac_FirstExposureSec": 1,
+            "Isaac_BurnInLayers": 1,
+            "Isaac_BurnInExposureSec": 1,
+            "Isaac_ModelExposureSec": 1,
+            "Isaac_LayerThicknessMicrons": 1,
+            "Isaac_SeparationRPMOffset": 1
+        }
+
++ Response 204
+
+## GET /print/profiles/{id}
+
++ Response 200 (application/json)
+
+        {
+            "id": "BC4ED94A-2B81-4B55-9A2B-AB3ECABFA286",
+            "technology": "PHOTORESIN",
+            "name": "Isaac High Quality",
+            "Isaac_FirstExposureSec": 1,
+            "Isaac_BurnInLayers": 1,
+            "Isaac_BurnInExposureSec": 1,
+            "Isaac_ModelExposureSec": 1,
+            "Isaac_LayerThicknessMicrons": 1,
+            "Isaac_SeparationRPMOffset": 1
+        }
+Format: 1A
+# Spark Drive
+  
+# Group Authentication
+Registration and management of developer accounts, including user permissions, accessing and refreshing keys. Includes tiers of developers and differentiation between hardware and software developers.
+
+Spark uses OAuth 2.0 for authentication and authorization. The two grant levels available are:  
+1. Client Credentials: This grant type allows access to public assets, member public information and other read only operations.  
+2. Authorization Code: This grant type allows access to private assets, member private information. This requires a 3-legged Oauth workflow and member authorization. Your developer account needs to be enabled for this type of access. 
+
+## Guest token [/oauth/accesstoken?grant_type=client_credentials]
+Retrieve access token from client_id & client_secret. This type of token allows access to READ-ONLY public data e.g public assets, member public profile etc. 
++ Parameters
+    + grant_type (Required , String, `client_credentials`}...always client_credentials
+    + client_id (Required, String,`bBGAQrXgivA9lKu7NMPyoYpVKNhGar6K`)...Client key provided during developer registration on the portal.
+    + client_secret (Required, String, `hAr4Gn0gA9vAyvI4`)...Client secret provided during developer registration on the portal.
+
+## Auth Code [/oauth/authorize]
+Before making API calls for a user, you must ask that user to authorize your application. First you should redirect the user to Spark's authorization URL along with the required query-string parameters below.
++ Parameters
+    + response_code (required, String, code)...Requesting Authorization code.
+    + client_id  (required, String,`bBGAQrXgivA9lKu7NMPyoYpVKNhGar6K`)...Client key provided during developer registration on the portal.
+    + redirect_uri (required, String, `/myapp/code`)...Relative redirect path where the authorization code will be returned after member login and authorization
+    + state (optional, String, `adaee33ss42233444`)...State will be sent back as part of the redirect_uri query paramerters, this should be a unique identifer you create to verify the redirect is coming from your original request see
+    + scope (optional, String, `basic`)...The scope you wish to access (space separated), defaults to basic. Options: basic, advanced.
+
+### Retreive auth code[GET]
++ Response 302
+    + Headers
+            Location: https://developerwebsite.com/myapp/code?code=abcefbgh&state=adaee33ss42233444
+
+## Access token [/oauth/accesstoken?grant_type=authorization_code]
+Retrieve access token from authorization code. The client app parses the redirect response to extract the authorization code. After obtaining the authorization code, the app uses the code to obtain an access token from the token endpoint.Along with the request string, the client app must Base64-encode the consumer key and secret and include the resulting value in the POST request as an HTTP Authorization header.
++ Parameters
+   + grant_type (required,String, `authorization_code`)...The value must be authorization_code unless you are refreshing a token (see Refreshing An Access Token)
+   + code (required, String, `abcefbgh`)...Authorization code provided in previous api redirect
+   + redirect_uri (required, String,`/myapp/code`)...The redirect_uri sent with the authorization request to obtain the code, this must exactly match the value sent in that request. 
+
+### Retrieve access token for authorization code [POST]
++ Request
+    + Headers
+        "Authorization: Basic WExvdEwzUFJ4TmtVR1hoR0FGRFBPcjZmcXR2QWh1WmU6aU5VeUVhT09oOTZLUjNZTA=="
+        
++ Response 200 (application/json)
+    {
+        "expires_in": 3600,
+        "status": "success",
+        "access_token": "Alph4num3r1ct0k3nv4lu3",
+        "token_type": "Bearer"
+        "refresh_token": "3ul4vn3k0tc1r3mun4hplA",
+        "scope": "basic"
+    }
+
+
+
+### Retrieve guess token for client credentials[POST]
++ Response 200 (application/json)
+    {
+      "issued_at" : "1380892555397",
+      "application_name" : "957aa73f-25c2-4ead-8021-adc01f0d2c6b",
+      "scope" : "",
+      "status" : "approved",
+      "api_product_list" : "[oauth-test]",
+      "expires_in" : "3599",
+      "developer.email" : "tesla@weathersample.com",
+      "organization_id" : "0",
+      "client_id" : "bBGAQrXgivA9lKu7NMPyoYpVKNhGar6K",
+      "access_token" : "ylSkZIjbdWybfs4fUQe9BqP0LH5Z",
+      "organization_name" : "rqa",
+      "refresh_token_expires_in" : "0",
+      "refresh_count" : "0"
+    }
+
+# Group Members
+This group of operations provides information on the member. A member is a user who signs up or logs into spark eco-system.
+
+## Members [/members?id]
+Manage public information about a member.
++ Parameters
+    + id (optional, String, `20280723`)...Member id
+
+### Retrieve a member [GET]
++ Response 200 (application/json)
+    {
+       member:{  
+          "membertypeid":0,
+          "memberid":20280723,
+          "profile":{
+             "description":"i am great!",
+             "findme":{
+                "twitter":"http:\/\/www.twitter.com\/jsmith",
+                "facebook":"http:\/\/www.facebook.com\/jsmith"
+             },
+             "avatarpath":"http:\/\/dev.squidplatform.net\/preview\/2011\/11\/11__09_47_18\/ponoko-dowloadable-design.jpg846476b8-bb22-4e8c-be2e-65366de168c6.jpg",
+             "location":"usa"
+          },   
+          "member_name":"jsmith",
+          "member_initial_name":"jsmith",
+          "comments":23,
+          "likes":2,
+          "follows":12,
+          "following":3,
+          "publish":2,
+          "locale":"en_us",
+       }
+}
+
+## Members [/members/{id}]
+Manage public information about a member.
++ Parameters
+    + id (required, String, `20280723`)...Member id
+
+### Retrieve a member [GET]
++ Response 200 (application/json)
+    {
+       member:{  
+          "membertypeid":0,
+          "memberid":20280723,
+          "profile":{
+             "description":"i am great!",
+             "findme":{
+                "twitter":"http:\/\/www.twitter.com\/jsmith",
+                "facebook":"http:\/\/www.facebook.com\/jsmith"
+             },
+             "avatarpath":"http:\/\/dev.squidplatform.net\/preview\/2011\/11\/11__09_47_18\/ponoko-dowloadable-design.jpg846476b8-bb22-4e8c-be2e-65366de168c6.jpg",
+             "location":"usa"
+          },   
+          "member_name":"jsmith",
+          "member_initial_name":"jsmith",
+          "comments":23,
+          "likes":2,
+          "follows":12,
+          "following":3,
+          "publish":2,
+          "locale":"en_us",
+       }
+}
+
+### Update a member [PUT]
++ Parameters
+    + description (optional, String, `Updated description`)...Member description
+    + location (optional, String, `London, UK`)...Member location
+    + member_name (optional, String, `jsmith new`)...Member screen name - this must be unique otherwise the method will return 400 error with suggested alternatives
+    + locale (optional, String, `en_US`)... Valid locale in in format <language>_<COUNTRY> 
+    + avatar (optional, String, `123456`)...File id which represents the member avatar. Also see file upload operations
++ Response 200 (application/json)
+    {
+        "_link":"/member/20280723"
+    }
+
+## Follows [/members/{id}/follow]
+
+### Retrieve member followers [GET]
++ Parameters
+    + following (optional, boolean, `false`)...If true return the list of members this member is following
+
++ Response 200 (application/json)
+    {
+        "follows:"
+            {
+                
+                "count":260,
+                "pages":20,
+                "limit":13,
+                "offset":39,
+                "_link":"/members/20280723/follow?limit=26",
+                "_link_prev":"/members/20280723/follow?limit=26&offset=26",
+                "_link_next":"/members/20280723/follow?limit=26&offset=39",
+           
+                "member_favorite": true,
+                "members":[
+                    {
+                    "member_id":123133,
+                    "member_name":"creative artist 101"
+                    "member_small_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "_link":"/member/123133"
+                    },
+                    {
+                    "member_id":123134,
+                    "member_name":"creative artist 102"
+                    "member_small_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "_link":"/member/123134"
+                    }
+                ]
+                
+            }
+
+    }
+
+### Update member follow status [PUT]
+
++ Response 200 (application/json)
+     
+    {
+        "follows":{
+            "count":52,
+            "is_member_following":true,
+            "_link":"/member/20280723/follow"
+        }
+    }
+
+## Assets [/members/{id}/assets]
+Retrieve this members assets. Depending on the context this operation may return both public and private assets i.e if the logged in member is requesting his/her own assets, private assets will also be returned
+
+### Retrive member assets [GET]
++ Response 200 (application/json)
+    {"assets":
+                
+                [
+                    {
+                    "is_featured":false,
+                    "comment_count":0,
+                    "member_small_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "asset_name":"tissue box",
+                    "thumb_path_prefix":"http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_online_viewer_available":true,
+                    "is_member_favorite":false,
+                    "favorite_count":1,
+                    "progress_status":1,
+                    "referenced_assets_count" : 0,
+                    "referenced_by_count" : 0,
+                     "referenced_asset_thumb" : "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/2012/12/13__09_57_54/hand.jpgf18ed964-0998-4f43-a165-c0f5c650ec08small.jpg",
+                      "date_published":"april 26, 2011 00:11:57",
+                    "keydata":{
+                       "keyfilefolder":[
+                          {
+                             "filefolder":[
+                                {
+                                   "id":5113474
+                                }
+                             ],
+                             "key":"viewerfiles"
+                          },
+                          {
+                             "filefolder":[
+                                {
+                                   "name":"10325_tissue box_v2_max2010_it2.stl",
+                                   "id":5337164.0,
+                                   "modeltocentimeters":-1.0
+                                },
+                                {
+                                   "name":"10325_tissue box_v2_max2010_it2.stl",
+                                   "id":5341121.0,
+                                   "modeltocentimeters":-1.0
+                                },
+                                {
+                                   "name":"5113474.stl",
+                                   "id":5376472.0,
+                                   "modeltocentimeters":-1.0
+                                }
+                             ],
+                             "key":"stlfiles"
+                          }
+                       ]
+                    },
+                    "canonical_seo_url":"http:\/\/dev.squidplatform.net\/123c-3d-model\/tissue-box\/592540",
+                    "artist_name":"autodesk",
+                    "asset_image":"2011\/04\/25__11_19_17\/tt_0000.jpg251cdd82-cdfb-4397-913a-738096e71046small-1.jpg",
+                    "rating":0.0,
+                    "format_name_long":"multiple ( .stl, .123c )",
+                    "count_rating":0,
+                    "price":0.0,
+                    "seo_template":"123c-3d-model tissue-box",
+                    "current_page":1,
+                    "asset_ext_name":"scenes & props",
+                    "model_type":"part",
+                    "file_size":1690664,
+                    "download_count":3008,
+                    "format_name_short":"stl 123c",
+                    "is_gallery_asset":true,
+                    "artist_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "artist_id":2345678,
+                    "media_type_id":23,
+                    "current_result":1,
+                    "mesh":yes,
+                    "associated_file_directory_path":"2011\/04\/25__11_19_17\/tt_0000.jpg251cdd82-cdfb-4397-913a-738096e71046small-1.jpg",
+                    "asset_id":592540
+                 }
+                ]
+            ,
+                "count":260,
+                "pages":20,
+                "limit":13,
+                "offset":39,
+                "_link":"/member/20280723/assets?limit=26",
+                "_link_prev":"/member/20280723/assets?limit=26&offset=26",
+                "_link_next":"/member/20280723/assets?limit=26&offset=39",
+           
+        }
+  
+
+## Likes [/members/{id}/likes]
+
++ Parameter 
+    + id (required, String, `123456`)...Member ID
+
+### Retrieve member liked assets [GET]
+
++ Response 200 (application/json)
+
+    {"assets":
+                [
+                    {
+                    "is_featured":false,
+                    "comment_count":0,
+                    "member_small_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "asset_name":"tissue box",
+                    "thumb_path_prefix":"http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_online_viewer_available":true,
+                    "is_member_favorite":false,
+                    "favorite_count":1,
+                    "progress_status":1,
+                    "referenced_assets_count" : 0,
+                    "referenced_by_count" : 0,
+                     "referenced_asset_thumb" : "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/2012/12/13__09_57_54/hand.jpgf18ed964-0998-4f43-a165-c0f5c650ec08small.jpg",
+                      "date_published":"april 26, 2011 00:11:57",
+                    "keydata":{
+                       "keyfilefolder":[
+                          {
+                             "filefolder":[
+                                {
+                                   "id":5113474
+                                }
+                             ],
+                             "key":"viewerfiles"
+                          },
+                          {
+                             "filefolder":[
+                                {
+                                   "name":"10325_tissue box_v2_max2010_it2.stl",
+                                   "id":5337164.0,
+                                   "modeltocentimeters":-1.0
+                                },
+                                {
+                                   "name":"10325_tissue box_v2_max2010_it2.stl",
+                                   "id":5341121.0,
+                                   "modeltocentimeters":-1.0
+                                },
+                                {
+                                   "name":"5113474.stl",
+                                   "id":5376472.0,
+                                   "modeltocentimeters":-1.0
+                                }
+                             ],
+                             "key":"stlfiles"
+                          }
+                       ]
+                    },
+                    "canonical_seo_url":"http:\/\/dev.squidplatform.net\/123c-3d-model\/tissue-box\/592540",
+                    "artist_name":"autodesk",
+                    "asset_image":"2011\/04\/25__11_19_17\/tt_0000.jpg251cdd82-cdfb-4397-913a-738096e71046small-1.jpg",
+                    "rating":0.0,
+                    "format_name_long":"multiple ( .stl, .123c )",
+                    "count_rating":0,
+                    "price":0.0,
+                    "seo_template":"123c-3d-model tissue-box",
+                    "current_page":1,
+                    "asset_ext_name":"scenes & props",
+                    "model_type":"part",
+                    "file_size":1690664,
+                    "download_count":3008,
+                    "format_name_short":"stl 123c",
+                    "is_gallery_asset":true,
+                    "artist_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "artist_id":2345678,
+                    "media_type_id":23,
+                    "current_result":1,
+                    "mesh":yes,
+                    "associated_file_directory_path":"2011\/04\/25__11_19_17\/tt_0000.jpg251cdd82-cdfb-4397-913a-738096e71046small-1.jpg",
+                    "asset_id":592540
+                 }
+                ]
+            ,
+                "count":26,
+                "pages":13,
+                "limit":26,
+                "offset":39
+                "_link":"/member/20280723/likes?limit=26",
+                "_link_prev":"/member/20280723/likes?limit=26&offset=26",
+                "_link_next":"/member/20280723/likes?limit=26&offset=39",
+           
+        }
+
+# Group Assets
+Asset related resources of spark. An asset is the top level storage construct for the spark drive. An asset can be thought of as a project or a folder with metadata. The asset contains 1..n files, metadata elements and references to other assets or even external links. Within the 3d modeling/printing eco-system it is often hard to model a complete creation and workflow with a single file (for example: a model may consist of obj, mtl, texture files) - Asset provides an aggregation point for several related files and metadata elements to fully represent a creation, its various transformations, translations and references. The operations listed below provide a full set of activities which can be performed against an asset.
+
+## Assets [/assets{?q,limit,offset,page_size,page_num,start_date,end_date,thumbnail_index,file_type_list,exclude_keywords,asset_ids,sort_by,sort_order,display_filter,exclude_artist_ids,include_artist_ids,project_status,description,parent_assets,child_assets,include_mature}]
+This api is a starting point to display galleries, perform free-form searches. Different filtering options allow searching by specific contained file type, keywords, publish dates, curation state (featured, popular) etc. 
+
+
++ Parameters
+    + q (optional, String, `cars+cat`) ...list of keywords to search against
+    + limit (optional, number, `20`)...number of results per page
+    + offset (optional, Number, `60`) ...This offsets the start of each page by the number specified. 
+    + start_date (optional, Date, `10-12-2013`) ...Limit results to those published after a given date (mm-dd-yyyy format) 
+    + end_date (optional, Date, `10-13-2013`)...Limit results to those published before a given date (M-d-yyyy format)  
+    + thumbnail_index (optional, Number, `1`)...Index of primary thumbnail image for results shown in THUMBNAIL_FILE (default is 1).<br>If thumbnail_index=2 is not available then it defaults to thumbnail_index=1.
+    + file_type_list (optional, String, `obj`)...Limit results based on a comma-separated list of file types. Options: obj, stl, mtl
+    + exclude_keywords (optional, String, `dog`)...Limit results based to those not associated with a list of keywords 
+    + asset_ids (optional, String, `123456+987654+456789` )...Limit results based on asset ID(s) 
+    + sort_by (optional, String,`asset_name`)...Order search results based on a specific attribute. <br> Options: asset_name, artist, date, favorite_count, favorite_count_strict,format, price, download_count.<br>Note: favorite_count_strict will sort the results strictly by number of likes, where as favorite_count will sort the results by popularity.
+    + sort_order  (optional,String,`asc`)...Direction of ordered search results based on value of sort_by. <br> Options: asc, desc 
+    + display_filter  (optional,String, `d`)...Show only Gallery or Featured items.<br>Options:<br>d: Gallery item with downloads <br>f: Featured items; <br>o: Online viewer enabled assets <br>Example: d, f, o, dfo, fo 
+    + exclude_artist_ids (optional,Number, `2345678`)...Limit results based on member or artist ids.
+    + include_artist_ids (optional, Number, `20288475`)...Limit results based on member or artist ids.
+    + description (optional, Boolean, `false`)...Return description of asset till 150 characters in results
+    + project_status (optional, Number, `1`)...Get result with project status. pass 1 for completed or 0 for in-progress.<br> Options: 0 or 1
+    + parent_assets (optional, Number, `588383`)...Pass parent asset Id and get its corresponding child assets.
+    + child_assets (optional, Number, `588383`)...Pass parent asset Id and get its corresponding child assets.
+    + include_mature (optional, Boolean, `false`)...Result will include asset marked as mature.
+
+### List all Assets [GET]
+
++ Response 200 (application/json)
+
+  {
+    "count": 260,
+    "limit": 13,
+    "offset": 39,
+    "_link": "/assets?q=abc&limit=26",
+    "_link_prev": "/assets?q=abc&limit=26&offset=26",
+    "_link_next": "/assets?q=abc&limit=26&offset=39",
+    "assets": [
+        {
+            "is_featured": false,
+            "comment_count": 0,
+            "member_small_avatar": "http://dev.squidplatform.net/images/v22/member/default_avatar.png",
+            "asset_name": "tissue box",
+            "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+            "is_online_viewer_available": true,
+            "is_member_favorite": false,
+            "favorite_count": 1,
+            "progress_status": 1,
+            "referenced_assets_count": 0,
+            "referenced_by_count": 0,
+            "referenced_asset_thumb": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/2012/12/13__09_57_54/hand.jpgf18ed964-0998-4f43-a165-c0f5c650ec08small.jpg",
+            "date_published": "april 26, 2011 00:11:57",
+            "key_data": {
+                "keyfilefolder": [
+                    {
+                        "filefolder": [
+                            {
+                                "id": 5113474
+                            }
+                        ],
+                        "key": "viewerfiles"
+                    },
+                    {
+                        "filefolder": [
+                            {
+                                "name": "10325_tissue box_v2_max2010_it2.stl",
+                                "id": 5337164,
+                                "modeltocentimeters": -1
+                            },
+                            {
+                                "name": "10325_tissue box_v2_max2010_it2.stl",
+                                "id": 5341121,
+                                "modeltocentimeters": -1
+                            },
+                            {
+                                "name": "5113474.stl",
+                                "id": 5376472,
+                                "modeltocentimeters": -1
+                            }
+                        ],
+                        "key": "stlfiles"
+                    }
+                ]
+            },
+            "canonical_seo_url": "http://dev.squidplatform.net/123c-3d-model/tissue-box/592540",
+            "artist_name": "autodesk",
+            "asset_image": "2011/04/25__11_19_17/tt_0000.jpg251cdd82-cdfb-4397-913a-738096e71046small-1.jpg",
+            "rating": 0,
+            "format_name_long": "multiple ( .stl, .123c )",
+            "count_rating": 0,
+            "price": 0,
+            "seo_template": "123c-3d-model tissue-box",
+            "current_page": 1,
+            "asset_ext_name": "scenes & props",
+            "model_type": "part",
+            "file_size": 1690664,
+            "download_count": 3008,
+            "format_name_short": "stl 123c",
+            "is_gallery_asset": true,
+            "artist_avatar": "http://dev.squidplatform.net/images/v22/member/default_avatar.png",
+            "artist_id": 2345678,
+            "media_type_id": 23,
+            "current_result": 1,
+            "mesh": true,
+            "associated_file_directory_path": "2011/04/25__11_19_17/tt_0000.jpg251cdd82-cdfb-4397-913a-738096e71046small-1.jpg",
+            "asset_id": 592540
+        }
+    ]
+}
+
+# Asset [/assets/{id}]
+Operations to perform CRUD operations on an asset with basic metadata. Additional operation sets will populate this asset with constituent files, additional metadata etc. 
+
+### Create a new Asset [POST]
++ Parameters
+    + title (required, String, `Alien`) ...Asset title
+    + description (required, String, `Mint colored alien`) ...title description
+    + tags (required, String, `alien,sci-fi,fantasy`) ... comma seperated list of tags
+    + publish (optional, Boolean, `false`) ... publish to gallery
+    + progress_status (optional, Number, `1`) ...progress status <br> Options:<br> 0:in progress<br>1:complete
+
++ Response 201 (application/json)
+
+        {
+            "_link":"/asset/269620",
+            "asset_id":269620
+        }
+
+### Retrieve an Asset [GET]
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+    + referenced_assets (optional, Number, `true`) ...When true referenced assets will be returned as an array sorted in descending order of the time when they were added.<br>Default: false
+
++ Response 200 (application/json)
+
+    + Headers
+        
+            Location: /assets/{id}    
+    + Body
+{
+    "_link": "/asset/630595",
+    "artist": {
+        "artist_name": "tim",
+        "avatar": "",
+        "description": "",
+        "location": ""
+    },
+    "asset_id": 630595,
+    "asset_name": "timproduct",
+    "asset_status_code": 0,
+    "canonical_seo_url": "http://dev.squidplatform.net/users/mcatrett/ms33/sherpa/3d-model/timproduct/630595",
+    "date_submitted": "April 09, 2011 07:27:54",
+    "delivery_media": "download only",
+    "description": "this is a test",
+    "used_in_project_count": 0,
+    "child_asset_count": 2,
+    "download_count": 0,
+    "favorited_by": [],
+    "favorite_count": 0,
+    "file_formats": [
+        {
+            "file_id": 5401172,
+            "id": 999,
+            "name": "other ( see notes )",
+            "size": 326560,
+            "version": ""
+        }
+    ],
+    "is_authorized_download": true,
+    "is_deleted": false,
+    "is_download_asset": true,
+    "progress_status": 1,
+    "is_member_favorite": false,
+    "is_gallery_asset": true,
+    "is_online_viewer_available": false,
+    "is_premium": false,
+    "is_repurchasable": false,
+    "is_reviewable": false,
+    "is_store_asset": false,
+    "keywords": "test",
+    "language": " ",
+    "model_type": 1,
+    "media_type": "3d models",
+    "status_post_count": 27,
+    "parent_asset_id": "",
+    "price": 0,
+    "purchase_date": "",
+    "rating_average": 0,
+    "rating_count": 0,
+    "mesh": true,
+    "rating_result": 0,
+    "region": " ",
+    "software": 9,
+    "thumbnails": [
+        {
+            "file_id": 123456,
+            "caption": "thumbnail caption",
+            "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+            "description": "thumbnail description",
+            "is_primary": true
+        },
+        {
+            "file_id": 123457,
+            "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+            "caption": "thumbnail caption 2",
+            "description": "thumbnail description 2",
+            "is_primary": false
+        }
+    ],
+    "referenced_assets": [
+        {
+            "_link": "/asset/588362",
+            "thumbnails": [
+                {
+                    "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_primary": false
+                },
+                {
+                    "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_primary": true
+                }
+            ],
+            "reference_added_date": "April 09, 2011 07:27:54",
+            "description": "publishing test.",
+            "media_type": 2,
+            "asset_name": "cylinders",
+            "asset_id": 588362,
+            "is_premium_asset": false,
+            "canonical_seo_url": "http://alpha.squidplatform.com/obj-catch/rn-building-2/1135545"
+        }
+    ],
+    "key_data": {
+        "viewerfiles": [
+            {
+                "id": 5113474
+            }
+        ],
+        "stlfiles": [
+            {
+                "name": "10325_tissue box_v2_max2010_it2.stl",
+                "id": 5337164,
+                "modeltocentimeters": -1
+            },
+            {
+                "name": "10325_tissue box_v2_max2010_it2.stl",
+                "id": 5341121,
+                "modeltocentimeters": -1
+            },
+            {
+                "name": "5113474.stl",
+                "id": 5376472,
+                "modeltocentimeters": -1
+            }
+        ]
+    }
+}
+
+
+### Update an Asset [PUT]
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+    + title (required, String, `Alien`) ...Asset title
+    + description (required, String, `Mint colored alien`) ...title description
+    + tags (required, String, `alien,sci-fi,fantasy`) ... comma seperated list of tags
+    + publish (optional, Boolean, `false`) ... publish to gallery
+    + progress_status (optional, Number, `1`) ...progress status <br> Options:<br> 0:in progress<br>1:complete
+
++ Response 200 (application/json)
+
+        {
+            "_link":"/asset/269620"        
+        }
+
+### Delete an Asset [DELETE]
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
++ Response 204
+
+# Asset Custom Data [/assets/{id}/customdata]
+Operations to add custom data to this asset. These operations are useful to add any asset specific custom data to the asset e.g tenant specific asset data useful for display purpose.
+
+Note: The key should be unique within the asset. Using the same key in POST will overwrite the existing data if any.
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create a new custom data entry within the asset[POST] 
++ Parameters
+    + custom_data (required, String, `{"custom_data": [{"key": "key1","data": "<Any custom data. Escaped json in case of JSON custom data>"},{"key": "key2","data": "<Any custom data. Escaped json in case of JSON custom data>"}]}`)...Key-Value pair of custom data JSON.
++ Request
+    + Header
+        X-AFC: FJKB32
+        X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 201 (application/json)
+{
+    "_link": "/assets/1495894/customdata"
+}
+
+### retrieve a shop asset custom data[GET]
++ Request
+    + Header
+        X-AFC: FJKB32
+        X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 200 (application/json)
+{
+    "custom_data": [
+        {
+            "key": "key1",
+            "data": "{\"camera\": {\"eye\": [0.779605,-1.04071,-0.0150464],\"fov\": 0.959931,\"up\": [-0.00353075,0.00402574,0.999986],\"view\": [-0.659365,0.751804,-0.00535469]},\"version\": 1,\"world\": {\"front\": [0,-1,0],\"up\": [0,0,1]}}"
+        },
+        {
+            "key": "key2",
+            "data": "this is custom data"
+        }
+    ]
+}
+
+### Delete an asset custom data[DELETE]
++ Request
+    + Header
+        X-AFC: FJKB32
+        X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + keys (required, String, `key1,key2`)...Comma seperated list of custom data keys to be deleted from this asset.
++ Response 204
+
+# Asset Previews [/assets/{id}/previews]
+Operations to add preview files to this asset. These operations are used to add any asset preview files to the asset e.g asset promotional downloads.
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create a new preview within the asset[POST] 
++ Parameters
+    + file_ids (required, String, `16804696,16804697`)...Comma seperated list of file ids received after uploading the files.
+
++ Request
+    + Header
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
+
++ Response 201 (application/json)
+{
+    "_link": "/assets/1495894/previews"
+}
+
+### retrieve a shop asset previews[GET]
++ Request
+    + Header
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
+
++ Response 200 (application/json)
+{
+    "previews": [
+        {
+            "file_id": 16804696,
+            "file_type": "",
+            "_link": "api/v2/assets/1495897/download?file=16804696"
+        },
+        {
+            "file_id": 16804697,
+            "file_type": "",
+            "_link": "api/v2/assets/1495897/download?file=16804697"
+        }
+    ]
+}
+
+### Delete an asset previews[DELETE]
++ Request
+    + Header
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
+
++ Parameters
+    + file_ids (required,String, `234567,334562`)...Comma seperated list of assets preview file ids to be deleted from this asset.
+    
++ Response 204
+
+# Asset References [/assets/{id}/references]
+Operations to link other assets to this asset. These operations are useful to aggregate related assets together e.g Model of a car may consist of several assets : wheels, body, engine etc.
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create a new reference within the asset[POST] 
++ Parameters
+    + asset_ids (required,String, `234567,334562`)...Comma seperated list of assets to be linked to this asset.
++ Response 201 (application/json)
+    {
+        "_link":"/assets/234566/references"
+    }
+
+### Retrieve asset references[GET]
++ Parameters
+    + limit (optional, number, `20`)...number of results per page. Default: 10
+    + offset (optional, Number, `60`) ...This offsets the start of each page by the number specified.  
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 200 (application/json)
+{
+    "count": 23,
+    "offset": 20,
+    "limit": 10,
+    "_link": "/asset/1260467/references?limit=10&offset=1",
+    "_link_prev": "/asset/1260467/references?limit=10&offset=10",
+    "_link_next": "/asset/1260467/references?limit=10&offset=30",
+    "reference_assets": [
+        {
+            "_link": "/asset/588362",
+            "thumbnails": [
+                {
+                    "id": 2232333,
+                    "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_primary": false,
+                    "caption": "thumbnail caption",
+                    "description": "thumbnail description"
+                },
+                {
+                    "id": 13224244,
+                    "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_primary": true,
+                    "caption": "thumbnail caption",
+                    "description": "thumbnail description"
+                }
+            ],
+            "reference_added_date": "April 09, 2011 07:27:54",
+            "description": "publishing test.",
+            "media_type": 2,
+            "asset_name": "cylinders",
+            "asset_id": 588362,
+            "is_premium_asset": false,
+            "canonical_seo_url": "http://alpha.squidplatform.com/obj-catch/rn-building-2/1135545"
+        }
+    ]
+}
+
+### Delete an asset reference[DELETE]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + asset_ids (required,String, `234567,334562`)...Comma seperated list of assets references to be deleted from this asset.
++ Response 204
+
+# Asset Referenced [/assets/{id}/referenced]
+This operation will return a list of assets where this asset is referenced.
+
+### Retrieve assets referencing this asset [GET]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+    + limit (optional, Number,`20`)...Number of results to return in each page
+    + offset (optional, Number, `3`)...This offsets the start of each page by the number specified.
+
++ Response 200 (application/json)
+{
+    "count": 23,
+    "offset": 20,
+    "limit": 10,
+    "_link": "/asset/1260467/references?limit=10&offset=1",
+    "_link_prev": "/asset/1260467/references?limit=10&offset=10",
+    "_link_next": "/asset/1260467/references?limit=10&offset=30",
+    "referenced_assets": [
+        {
+            "_link": "/asset/588362",
+            "thumbnails": [
+                {
+                    "id": 2232333,
+                    "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_primary": false,
+                    "caption": "thumbnail caption",
+                    "description": "thumbnail description"
+                },
+                {
+                    "id": 13224244,
+                    "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+                    "is_primary": true,
+                    "caption": "thumbnail caption",
+                    "description": "thumbnail description"
+                }
+            ],
+            "reference_added_date": "April 09, 2011 07:27:54",
+            "description": "publishing test.",
+            "media_type": 2,
+            "asset_name": "cylinders",
+            "asset_id": 588362,
+            "is_premium_asset": false,
+            "canonical_seo_url": "http://alpha.squidplatform.com/obj-catch/rn-building-2/1135545"
+        }
+    ]
+}
+
+# Asset Sources [/assets/{id}/sources]
+Add files which constitute the "source" for this asset, this can include virtually any file type - 
+all major 3d formats will be automatically translated into a print ready STL format, which will be available in through the asset translations api. 
+Adding the sources will usually be a starting point for storing an asset in cloud services storage - subsequent tranformation operations can then be performed on these source files. 
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create a new source within the asset[POST] 
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + file_ids (required,String, `123456,234345`) ...Comma seperated list of files to be added as sources to this asset. The operation will automatically populate the file type based on previously uploaded file's mime type. 
++ Response 201 (application/json)
+    {
+        "_link":"/assets/234566/sources"
+    }
+
+### Retrieve asset sources[GET]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 200 (application/json)
+    
+{
+    "sources": [
+        {
+            "file_id": "123456",
+            "file_type": "STL",
+            "_link": "api/v2/assets/id/download?file=123456"
+        },
+        {
+            "file_id": "123456",
+            "file_type": "STL",
+            "_link": "api/v2/assets/id/download?file=123456"
+        }
+    ]
+}
+
+### Delete an asset source[DELETE]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + file_ids (required,String, `234567,334562`)...Comma seperated list of files  to be deleted from this assets source.
++ Response 204
+
+
+# Asset Thumbnails [/assets/{id}/thumbnails]
+Add files as representational thumbnails for this asset. The thumbnails can include photographs of printed asset or rendered images of the 3d model. The thumbnail files should be atleast 1200x1200 px resolution. These thumbnails will be utilized by applications while displaying galleries or asset details.
+We will auto generate various sizes from this thumbnail:  
+* small(64)  
+* petite(90)  
+* medium(128)  
+* medium2(256)  
+* large(600)  
+* large2(800)  
+* hd(1200) 
+
+Images will be generated in both PNG and JPG formats. 
+ 
+The thumbnail url prefix is available in asset response, the size post-fix and extension can be appended to the prefix to recover the correct size.
+
+Note: The PUT updates the thumbnail metadata such as caption, description, thumbnail data, ModelToCentimeters & Primary thumbnail flag for an already existing thumbnails for an asset.
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create a new thumbnail within the asset[POST] 
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + thumbnails (required, JSON, `[{"id": "123456","caption": "thumbnail caption","description": "thumbnail description","is_primary": true},{"id": "123457","caption": "thumbnail caption 2","description": "thumbnail description 2","is_primary": false},{"id": "123458","caption": "thumbnail caption 2","description": "thumbnail description 2","is_primary": false}]`) ...JSON list of files to be added as thumbnails to this asset. The file must be of mime type PNG or JPG/JPEG.  
+    + async (optional, Boolean, `true`)...Whether thumbnails should be generated asynchronously
++ Response 201 (application/json)
+    {
+        "_link":"/assets/234566/thumbnails"
+    }
+
+### Retrieve asset thumbnails[GET]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 200 (application/json)
+{
+    "thumbnails": [
+        {
+            "id": 123456,
+            "caption": "thumbnail caption",
+            "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+            "description": "thumbnail description",
+            "is_primary": true
+        },
+        {
+            "id": 123457,
+            "thumb_path_prefix": "http://sherpapreview-standard.s3-website-us-east-1.amazonaws.com/preview/dev/2012/06/06__16_12_42/tiger-large.jpga6379c35-4d07-45a7-b33f-93fd2c15ff45",
+            "caption": "thumbnail caption 2",
+            "description": "thumbnail description 2",
+            "is_primary": false
+        }
+    ]
+}
+
+### Delete an asset thumbnails[DELETE]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + thumbnail_ids (required,String, `234567,334562`)...Comma seperated list of assets thumbnails to be deleted from this asset.
++ Response 204
+    
+
+# Asset External Links [/assets/{id}/links]
+All references to external artifacts such as blog posts, videos, photos etc.
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create a new link within the asset [POST] 
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + links (required,JSON, `[{"type": "VIDEO","references": [{"id": "5423906829345","title": "title","description": "title","embedWidget": "<iframe width=\"854\" height=\"510\" src=\"//www.youtube.com/embed/wQ3nCa2_f88\" frameborder=\"0\"></iframe>"}]},{"type": "LINK","references": [{"id": "54239097944f1","title": "link","description": "title","url": "https://www.youtube.com/watch?v=wQ3nCa2_f88"}]}]`) ...JSON list of links along with their types. Valid types include: VIDEO, IMAGE, INSTRUCTABLES, LINK, AUDIO, OTHERS 
++ Response 201 (application/json)
+    {
+        "_link":"/assets/234566/links"
+    }
+
+### Retrieve asset links[GET]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 200 (application/json)
+{
+    "links": [
+        {
+            "type": "VIDEO",
+            "references": [
+                {
+                    "id": "5423906829345",
+                    "title": "title",
+                    "description": "title",
+                    "embedWidget": "<iframe width=\"854\" height=\"510\" src=\"//www.youtube.com/embed/wQ3nCa2_f88\" frameborder=\"0\"></iframe>"
+                }
+            ]
+        },
+        {
+            "type": "LINK",
+            "references": [
+                {
+                    "id": "54239097944f1",
+                    "title": "link",
+                    "description": "title",
+                    "url": "https://www.youtube.com/watch?v=wQ3nCa2_f88"
+                }
+            ]
+        }
+    ]
+}
+
+### Delete an asset link [DELETE]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 204
+
+
+# Asset Translations [/assets/{id}/translations]
+This api will be used by backend services to update translations for various uploaded files including source files, tranformation files etc. 
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create new translations within the asset [POST] 
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + translations (required,JSON, `[{"inputFileItemId": "5358536","outputFileItemId": "5358536","outputFileUrl": "","outputFileType": "","outputFileName": ""},{"inputFileItemId": "5358536","outputFileItemId": "5358536","outputFileUrl": "","outputFileType": "","outputFileName": ""}]`) ...JSON list of source file id along with translated file id and type of translation performed. 
++ Response 201 (application/json)
+    {
+        "_link":"/assets/234566/translations"
+    }
+
+### Retrieve translations [GET]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Response 200 (application/json)
+{
+    "translations": [
+        {
+            "inputFileItemId": "5358536",
+            "outputFileItemId": "5358536",
+            "outputFileUrl": "https://s3.amazonaws.com/123d_online_file_cache_prod/MARKETPLACE/1206348/16448602/bolts",
+            "outputFileType": "BOLT"
+        },
+        {
+            "inputFileItemId": "5358536",
+            "outputFileItemId": "5358536",
+            "outputFileName": "shopping_cart.stl",
+            "outputFileType": "STL"
+        },
+        {
+            "inputFileItemId": "5358536",
+            "outputFileItemId": "5049748",
+            "outputFileType": "Viewable"
+        }
+    ]
+}
+
+### Update the translations [PUT]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + translations (required,JSON, `{[{"source":123422,"translation":3453434,"type":"STL}]}`) ...JSON list of source file id along with translated file id and type of translation performed. 
++ Response 204 (application/json)
+    {
+        "_link":"/assets/234566/translations"
+    }
+
+### Delete an asset translation [DELETE]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + translations (required,String, `3453434,123422`)...Comma seperated list of translated file ids which should be removed.
++ Response 204 (application/json)
+
+
+# Asset Likes [/asset/{id}/likes]
+This operation is basically a toggle - calling PUT operation repeteadly will set/unset like state for this member on this asset.
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Retrieve total like count and list of favoriters[GET]
++ Parameters
+    + limit (optional, Number,`20`)...Number of results to return in each page
+    + offset (optional, Number, `3`)...Current page number
++ Response 200 (application/json)
+    
+        {
+                "count":260,
+                "pages":20,
+                "limit":13,
+                "offset":39,
+                "_link":"/asset/234566/likes?limit=26",
+                "_link_prev":"/asset/234566/likes?limit=26&offset=26",
+                "_link_next":"/asset/234566/likes?limit=26&offset=39",
+                "member_favorite": true,
+                "members":[
+                    {
+                    "member_id":123133,
+                    "member_name":"creative artist 101"
+                    "member_small_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "_link":"/member/123133"
+                    },
+                    {
+                    "member_id":123134,
+                    "member_name":"creative artist 102"
+                    "member_small_avatar":"http:\/\/dev.squidplatform.net\/images\/v22\/member\/default_avatar.png",
+                    "_link":"/member/123134"
+                    }
+                ]
+
+        }
+
+### Update like state for a member [PUT]
++ Response 200 (application/json)
+    {
+        "likes":{
+            "count":52,
+            "is_member_favorite":true,
+            "_link":"/asset/234566/likes"
+        }
+    }
+    
+
+# Asset Comments [/assets/{id}/comments]
+Operations to manage comments on an asset
+
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create new comment within an asset[POST] 
++ Parameters
+    + comment (required,String, `encoded comment text`) ...any 3rd party links in comments will be encoded, to reference external links use /assets/{id}/links apis 
+    + in_reply_to (optional, String, `11323333`)...id of comment for which this comment is a reply
++ Response 201 (application/json)
+    
+       {
+            "count":34,
+            "link":"/assets/234566/comments",
+            "comment_id":"adaee1233"
+        }
+
+### Retrieve asset comments[GET]
++ Parameters
+    + limit (optional, Number,`20`)...Number of results to return in each page
+    + offset (optional, Number, `3`)...This offsets the start of each page by the number specified.
+
++ Response 200 (application/json)
+    
+        {
+            "count":260,
+            "pages":20,
+            "limit":13,
+            "offset":39,
+            "_link":"/asset/234566/comments?limit=26",
+            "_link_prev":"/asset/234566/comments?limit=26&offset=26",
+            "_link_next":"/asset/234566/comments?limit=26&offset=39",
+               
+            
+            "comments":
+            [
+                {
+                    "member_id" : 20288416,
+                    "member_small_avatar" : "https://dev.squidplatform.net/images/v22/member/default_avatar.png",
+                    "member_name" : "amol tulaskar",
+                    "body" : "api test reply comment to comment",
+                    "comment_id" : "cmdm35wh3y8vx42",
+                    "timestamp" : "2012-06-27 11:04:41",
+                    "in_reply_to" :
+                    {
+                        "member_id" : 20288416,
+                        "member_small_avatar" : "https://dev.squidplatform.net/images/v22/member/default_avatar.png",
+                        "member_name" : "amol tulaskar",
+                        "body" : "api original comment",
+                        "comment_id" : "cmdm35wh3y8vx42",
+                        "timestamp" : "2012-06-27 11:04:41"
+                    }
+            
+         
+                }
+            ]
+        }
+          
+
+### Update a comment[PUT]
++ Parameters
+    + comment (required,String, `encoded comment text`) ...any 3rd party links in comments will be encoded, to reference external links use /assets/{id}/links apis 
+    + comment_id (required, String, `123aaddq33`)...id of comment to be updated
++ Response 200 (application/json)
+    {
+        "comments":{
+            "count":52,
+            "_link":"/asset/234566/comments"
+        }
+    }
+    
+
+### Delete an asset comments[DELETE]
++ Parameters
+    + comment_ids (required,String, `234567,334562`)...Comma seperated list of comments to be deleted from this asset.
++ Response 204
+
+# Asset Flag [/asset/{id}/flags]
+Flag an asset along with reason for flagging. This operation is a no-op if an asset has already been flagged by this member.
+
+### Flag an asset [PUT]
+
++ Parameters
+    + reason (optional, String, `INAPPROPRIATE`)...Options: INAPPROPRIATE, COPYRIGHT, QUALITY
+    + comment (optional , String, `optional user comments`) ...additional user comments 
++ Response 204
+
+# Asset Status Posts [/assets/{id}/status]
+Operations to manage status posts on an asset. Status posts are updates to the progress of an asset made by the author. e.g "Finished textures today".  
+
++ Parameters
+    + id (required,Number,`234566`)...Numeric `id` of the asset to perform action with. 
+
+### Create a new status post within an asset[POST] 
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + status_post (required,String, `encoded status post text`) ...any 3rd party links in status posts will be encoded, to reference external links use /assets/{id}/links apis 
+    
++ Response 201 (application/json)
+    
+       {
+            "status_post_id":"adaee1233",
+            "_link":"/assets/234566/status?id=adaeee1233"
+        }
+
+### Retrieve asset status posts[GET]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + limit (optional, Number,`20`)...Number of results to return in each page
+    + offset (optional, Number, `3`)...This offsets the start of each page by the number specified.
+
++ Response 200 (application/json)
+    
+        {
+            "count":260,
+            "limit":13,
+            "offset":39,
+            "_link":"/asset/234566/status?limit=26",
+            "_link_prev":"/asset/234566/status?limit=26&offset=26",
+            "_link_next":"/asset/234566/status?limit=26&offset=39",
+            "status_posts":
+            [
+                {
+                
+                    "status_post_id" : 12345,
+                    "body":"Updated textures",
+                    "timestamp" : "April 09, 2011 07:27:54"
+         
+                }
+            ]
+        }
+          
+
+### Update a status post[PUT]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + status_post (required,String, `encoded comment text`) ...any 3rd party links in status posts will be encoded. To reference external links use /assets/{id}/links apis 
+    + status_post_id (required, String, `123aaddq33`)...id of status post to be updated
++ Response 200 (application/json)
+    {
+        "status_posts":{
+            "count":52,
+            "_link":"/asset/234566/status"
+        }
+    }
+
+### Delete an asset status post[DELETE]
++ Request
+    + Header
+            
+            X-AFC: FJKB32
+            X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
++ Parameters
+    + status_post_id (required,String, `234567,334562`)...Comma seperated list of status posts to be deleted from this asset.
++ Response 204
+
+## Group Files
+Files are "second class" citizens in the spark drive ecosystem. As explained in the Assets api introduction: Within the 3d modeling/printing eco-system it is often hard to model a complete creation and workflow with a single file. Hence a file by itself has little meaning without the context of the asset it belongs to. 
+Of course in order to add a file to an asset, it must be uploaded first. The api operations below provide various ways of uploading a file and recieving a file id which can then be used to associate file with an asset. 
+
+#Upload File [/files/upload]
+If the file is sent as a application/gzip and unzip parameter is = true, it will be unzipped and id will be returned for each constituent file within the zip. 
+In case of gzipped files, file name extension will be utilized to determine the file type (e.g. stl or obj). 
+In case of base64 encoded files, file name extension will be utilized to determine file type (e.g stl or obj).
+
++ Parameters
+    + unzip (optional,String, `false`)...Indicate if the zip file should be unzipped and each constituent files be treated as an individual file. Default is false. 
+
+### Upload files [POST]
+
++ Request
+    + Header
+        X-AFC: FJKB32
+        X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
+        Content-type: multipart/form-data; boundary="---abc123"
+                
+    + Body
+        ---abc123
+        Content-Disposition: form-data; name="aceb"; filename="data.aceb"
+        Content-Type: application/octet-stream
+        ... file data here ...
+        ---abc123
+        Content-Disposition: form-data; name="dome"; filename="model.gzip"
+        Content-Type: application/gzip
+        ... file data here ...
+        ---abc123
+        Content-Disposition: form-data; name="acmo"; filename="outputs.csv"
+        Content-Type: base64
+        ... file data here ...
+        ---abc123
+
++ Response 200
+        {
+            "files":[{"name":"data.aceb", "file_id":"123334"},{"name":"model.gzip.carmodel.obj", "file_id":"123335"},{"name":"model.gzip.carmodel.mtl", "file_id":"123336"},{"name":"outputs.csv", "file_id":"123337"}]
+        }
+
+#Download File [/files/download{?file_ids,asset_id}]
+Download a specific file or set of files. 
+
++ Parameters
+    + file_ids (required,String `1233233,1333233`) ...Comma seperated list of file ids. If more than one file is specified, the download will be a zip
+    + asset_id (optional, String `23244422`)... Asset id
+
+### Download files [GET]
+
++ Request
+    + Header
+        X-AFC: FJKB32
+        X-Session: F56FFEEF-8035-4F7E-90A3-066C5897AD57
+
++ Response 200
+FORMAT: 1A
+
+#Spark Intro  
+
+## Everything on this API docs is a work in progress and is subject to change.
+
+#Verbs
+We use restful verbs.
+
+|Verb         | Description                                                                                               
+| ------      | -------------------------------------------------------------------------------------------------------
+| `GET`       |  Used to select one or more items. Success returns 200 status code with json result item(s) in body.   
+| `POST`      |  Used to create a new item. Success returns 201 status code with newly created json item in body.      
+| `PUT`       |  Used to update an item. Success returns 200 status code with updated json item in body.               
+| `DELETE`    |  Used to delete an item. Success returns 204 status code with no body.
+
+#Status Codes
+We'll respond with one of the following status codes.
+
+|Code       | Description 
+| ------    |---------
+|`200`      | Success  
+|`201`      | Success - new resource created.
+|`202`      | Success - accepted request, but processing not complete.
+|`204`      | Success - no content to return.
+|`302`      | Redirect  to another resource
+|`400`      | Bad Request - i.e. your request couldn't be parsed.
+|`401`      | Unauthorized - user is not logged in, cannot access resource.
+|`404`      | Not Found - resource doesn't exist.
+|`422`      | Unprocessable Entity - i.e. validation errors.
+|`429`      | Rate limit exceeded, try again later.
+|`500`      | Server error.
+
+# Errors
+Any 4xx and 5xx response is an error. 
+In addition to the http code we will return additional information in the response payload as follows:  
+
+    {
+        "code":"numeric code specific to this api as defined in docs",  
+        "status":"same as http status code e.g 404",  
+        "message":"human readable error message",
+        "error_id":"unique code which links back to stack trace in logs",
+        "data":"any additional data the api may want to send back as json"
+    }
+
+
+
+#Standards
+During api creation we follow these standards: -
+ 1. All json key names are lower case.
+ 2. Multi word names are seperated by _ e.g member_id, asset_id etc.  
+ 3. For api's that return paged result we always return count, limit (page size) and offset (current cursor location) values.  
+ 4. For api's that return paged result we always return _link_prev and _link_next values.  
+ 5. All times are in GMT with format "April 09, 2011 07:27:54"
+ 6. All api end points strive to be nouns vs verbs. The http method (POST/GET/PUT/DELETE) determines the action to be performed e.g GET /api/v1/asset vs /api/v1/get_asset.
+Format: 1A
+
+# Translation Jobs
+
+# Group Translation Jobs
+Translation jobs related resources. A translation is a job submitted by the client to kick off a translation of an asset.
+
+The translation job resource has the following attributes:
+
+- id
+- name
+- source_url
+- source_file_type
+- target_file_url
+- target_file_type
+- submit_time
+- translation_start_time
+- translation_end_time
+- synchronic
+- callback_url
+- progress
+
+The translation job can be **synchronic** or **asynchronous**. The synchronic will be processed with high priority.
+
+The status and error respondse follows the Spark standard defined at [Spark Intro](http://docs.sparkintro.apiary.io/introduction/status-codes).
+A translation job maybe failed because:
+
+* Bad Message
+* Can't download source files
+* Can't upload translated files
+* Translation failed
+* Unknow error
+
+This information will be included into the error message if it is happened. All errors will have a UUDI to ensure which can be easily identified from the Splunk (which also capture the information level logs from the translation).
+
+When the application submit a translation job, it can provide a **callback url**. The translation service use it to notify the
+application when the translation is **progressed**. A translation job is processed in below steps:
+
+|Code      | Progress 
+| ------   |---------
+| 1. Job is dispatched                       | 10%
+| 2. Download source file                    | 30%
+| 3. Translate source file to target format  | 80%
+| 4. Upload the translated file(s)           | 100%
+
+## Translation Jobs [/translations{?q,limit,asset_ids,start_date,end_date,source_file_type,target_file_type}]
+This api is a starting point to query the translation jobs, perform free-form
+searches. The filtering options are to do defined.
+
++ Model (application/json)
+    + Headers
+
+            Location: /translations
+
+    + Body
+            
+            {
+                "translation": {
+                    "id": 592540,
+                    "name": "chair",
+                    "source_url": "https://s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/chair.stl",
+                    "source_file_type": "stl",
+                    "target_file_url":"https://s3.amazonaws.com/123d_online_file_cache_beta/s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/chair/SVF/0.svf",
+                    "target_file_type": "svf",
+                    "submit_time": "2012-06-27 11:04:41",
+                    "translation_start_time": "2012-06-27 11:06:41",
+                    "translation_end_time": "2012-06-27 11:06:41",
+                    "synchronic": true,
+                    "callback_url": "",
+                    "progress": 30
+                }
+            }
+
+
++ Parameters
+    + q (optional, String, `chair+desktop`) ...list of names to search against
+    + limit (optional, number, `20`) ...number of results
+    + asset_ids (optional, String, `123456+987654+456789` ) ...Limit results based on asset ID(s)
+    + start_date (optional, Date, `10-12-2013`) ...Limit results to those submitted after a given date (mm-dd-yyyy format)
+    + end_date (optional, Date, `10-25-2013`) ...Limit results to those submitted before a given date (mm-dd-yyyy format)
+    + source_file_type (optional, String, `stl`) ...Limit results to those whose source file type matches the given file type
+    + target_file_type (optional, String, `svf`) ...Limit results to those whose target file type matches the given file type
+
+### List all Translation Jobs [GET]
+
++ Response 200 (application/json)
+
+            {
+              "count": 2,
+              "limit": 13,
+              "translations": [
+                {
+                  "id": 592540,
+                  "name": "chair",
+                  "source_url": "https://s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/chair.stl",
+                  "source_file_type": "stl",
+                  "target_file_url": "https://s3.amazonaws.com/123d_online_file_cache_beta/s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/chair/SVF/0.svf",
+                  "target_file_type": "svf",
+                  "submit_time": "2012-06-27 11:04:41",
+                  "translation_start_time": "2012-06-27 11:06:41",
+                  "translation_end_time": "2012-06-27 11:06:41",
+                  "synchronic": true,
+                  "callback_url": "",
+                  "progress": 100
+                },
+                {
+                  "id": 592541,
+                  "name": "desktop",
+                  "source_url": "https://s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/desktop.stl",
+                  "source_file_type": "stl",
+                  "target_file_url": "https://s3.amazonaws.com/123d_online_file_cache_beta/s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/desktop/SVF/0.svf",
+                  "target_file_type": "svf",
+                  "submit_time": "2012-06-27 11:04:41",
+                  "translation_start_time": "2012-06-27 11:06:41",
+                  "translation_end_time": "2012-06-27 11:06:41",
+                  "synchronic": true,
+                  "callback_url": "",
+                  "progress": 80
+                }
+              ]
+            }
+
+
+## Translation Job [/translations/{id}]
+
+Operations to perform POST, GET, DELETE on an translation job with basic metadata.
+
+### Create a new translation job [POST]
+
++ Parameters
+    + name (required, String, `chair`) ...Translation name
+    + source_file_type (required, String, `stl`) ...Source file type
+    + source_url (required, String, `path of chairl.stl`) ...Source file url
+    + target_file_type (required, String, `svf`) ...Target file type
+    + synchronic (optional) ...Whether this is a synchronic translation job. Default value is **false**
+    + callback_url (optional) ... The callback url used to notify the application when the translation is progressed
+    
++ Response 201 (application/json)
+
+           {
+               "id": 592540,
+               "name": "chair",
+               "source_url": "url",
+               "source_file_type": "stl",
+               "target_file_type": "svf",
+               "submit_time": "2012-06-27 11:04:41",
+               "synchronic": false,
+               "callback_url": "",
+               "progress": 0
+           }
+
+### Retrieve a translation job [GET]
+
++ Parameters
+    + id (required, Number, `234566`) ...Numeric `id` of the translation to perform action with
+
++ Response 200 (application/json)
+
+    + Headers
+
+            Location: /translations/{id}
+
+    + Body
+            
+            {
+                "translation": {
+                    "id": 592540,
+                    "name": "chair",
+                    "source_url": "https://s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/chair.stl",
+                    "source_file_type": "stl",
+                    "target_file_url":"https://s3.amazonaws.com/123d_online_file_cache_beta/s3.amazonaws.com/123d_online_file_cache_beta/SparkViewer/testmodels/chair/SVF/0.svf",
+                    "target_file_type": "svf",
+                    "submit_time": "2012-06-27 11:04:41",
+                    "translation_start_time": "2012-06-27 11:06:41",
+                    "translation_end_time": "2012-06-27 11:06:41",
+                    "synchronic": false,
+                    "callback_url": "",
+                    "progress": 80
+                }
+            }
+
+### DELETE a translation job [DELETE]
+
++ Parameters
+    + id (required, Number, `234566`) ...Numeric `id` of the translation to perform action with
+
++ Response 204 (application/json)
