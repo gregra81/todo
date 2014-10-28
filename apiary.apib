@@ -4,10 +4,11 @@ HOST: https://sample
 # sampleapi
 Sample API
 
-# Group User management
-Resource related to user account management
+# Group Print
+Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum 
 
-
+## Authentication
+Resource related to user auth
 ## User collection [/users]
 ### List all users [GET]
 + Response 200 (application/json)
@@ -34,3 +35,69 @@ Resource related to user account management
     + Headers
 
             Location: https://sample
+            
+## Print docs
+Resource related to prints
+## Print collection [/print]
+### List all users [GET]
++ Response 200 (application/json)
+
+        [{
+            "id": "mkim",
+            "email": "mkim@sample.com", 
+            "firstName": "Maxim",
+            "lastName": "Kim"
+        }, { ... }
+        ]
+
+### Register new user account [POST]
++ Request (application/json)
+
+            {
+                "email": "mkim@sample.com", 
+                "firstName": "Maksim",
+                "lastName": "Kim",
+                "password": "cheburator"
+            }
+
++ Response 201
+    + Headers
+
+            Location: https://sample
+            
+       
+
+            
+# Group Drive
+Drive is so cool Drive is so cool Drive is so cool Drive is so cool Drive is so cool Drive is so cool Drive is so cool Drive is so cool 
+
+# User management2
+Resource related to user account management
+
+
+### User collection [/users2]
+#### List all users [GET]
++ Response 200 (application/json)
+
+        [{
+            "id": "mkim",
+            "email": "mkim@sample.com", 
+            "firstName": "Maxim",
+            "lastName": "Kim"
+        }, { ... }
+        ]
+
+#### Register new user account [POST]
++ Request (application/json)
+
+            {
+                "email": "mkim@sample.com", 
+                "firstName": "Maksim",
+                "lastName": "Kim",
+                "password": "cheburator"
+            }
+
++ Response 201
+    + Headers
+
+            Location: https://sample            
