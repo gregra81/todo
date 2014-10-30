@@ -101,3 +101,32 @@ Resource related to user account management
     + Headers
 
             Location: https://sample            
+            
+            
+### User3 collection [/users3]
+#### List all users [GET]
++ Response 200 (application/json)
+
+        [{
+            "id": "mkim",
+            "email": "mkim@sample.com", 
+            "firstName": "Maxim",
+            "lastName": "Kim"
+        }, { ... }
+        ]
+
+#### Register new user account3 [POST]
++ Request (application/json)
+
+            {
+                "email": "mkim@sample.com", 
+                "firstName": "Maksim",
+                "lastName": "Kim",
+                "password": "cheburator"
+            }
+
++ Response 201
+    + Headers
+
+            Location: https://sample            
+            
